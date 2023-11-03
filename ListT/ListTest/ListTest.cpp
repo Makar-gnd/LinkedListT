@@ -24,7 +24,8 @@ namespace ListTest
 		TEST_METHOD(TestMethod3)
 		{
 			List<std::string> A{"a", "b"};
-			A.PushFront("x");
+			std::string x = "x";
+			A.PushFront(x);
 			Assert::IsTrue(A.ToString() == "xab");
 		}
 		TEST_METHOD(TestMethod4)
@@ -50,6 +51,18 @@ namespace ListTest
 		{
 			List<std::string> E;
 			Assert::IsTrue(E.IsEmpty());
+		}
+		TEST_METHOD(TestMethod8)
+		{
+			List<std::string> FF;
+			FF.PushBack("a");
+			Assert::IsFalse(FF.IsEmpty());
+		}
+		TEST_METHOD(TestMethod9)
+		{
+			List<int> D;
+			D.PushFront(5);
+			Assert::IsFalse(D.ToString() == "2");
 		}
 	};
 }

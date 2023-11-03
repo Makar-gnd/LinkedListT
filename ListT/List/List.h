@@ -3,7 +3,6 @@
 #include <exception>
 #include <string>
 #include <sstream>
-
 template<typename T>
 class List
 {
@@ -22,7 +21,7 @@ public:
 	@brief Функция добавляющая элемент в конец списка.
 	@param data Данные добавляемые в список.
 	*/
-	void PushBack(T data) noexcept;
+	void PushBack(const T& data);
 
 	/*
 	@brief Функция создающая строку из списка
@@ -38,7 +37,7 @@ public:
 	@brief Функция добавляющая элемент в начало списка.
 	@param data Данные добавляемые в список.
 	*/
-	void PushFront(T data) noexcept;
+	void PushFront(const T& data);
 
 	/**
 	@brief Конструктор списка через initializer_list.
@@ -51,12 +50,20 @@ public:
 	*/
 	void Clear();
 
-	/*
+	/**
 	* @brief Перегрузка оператора для копирования.
 	* @param other Список для копирования.
 	* @return Скопированный список.
 	*/
-	List<T> operator=(const List<T>& other) noexcept;
+	List<T>& operator=(const List<T>& other);
+
+	/**
+	* @brief Перегрузка оператора для мува.
+	* @param other Список для мува.
+	* @return Мувнутый список.
+	*/
+	List<T>& operator=(List<T>&& other);
+
 
 	/**
 	@brief Функция удаляющая элемент с конца списка.
@@ -81,17 +88,17 @@ public:
 	*/
 	List<T>(const List<T>& other);
 
-	/*
+	/**
 	* @brief Мув
 	*/
-	List(List&& second) noexcept;
+	List<T>(List&& second) noexcept;
 private:
 	template<typename T>
 	struct Node
 	{
 		T data;
 		Node* pNext;
-		/*
+		/**
 		* @brief Конструктор класса Node.
 		* @param data Данные.
 		* @param pNext Указатель на следующий элемент списка.
@@ -105,10 +112,8 @@ private:
 };
 
 template<typename T>
-inline List<T>::List()
+inline List<T>::List() : size{0}, head{nullptr}
 {
-	size = 0;
-	head = nullptr;
 }
 
 template<typename T>
@@ -118,7 +123,7 @@ inline List<T>::~List()
 }
 
 template<typename T>
-inline void List<T>::PushBack(T data) noexcept
+inline void List<T>::PushBack(const T& data) 
 {
 	if (head == nullptr)
 	{
@@ -126,7 +131,7 @@ inline void List<T>::PushBack(T data) noexcept
 	}
 	else
 	{
-		Node<T>* current = this->head;
+		auto current = this->head;
 		while (current->pNext != nullptr)
 		{
 			current = current->pNext;
@@ -140,7 +145,7 @@ template<typename T>
 inline std::string List<T>::ToString() const noexcept
 {
 	std::stringstream buffer{};
-	Node<T>* current = this->head;
+	auto current = this->head;
 	while (current != nullptr)
 	{
 		buffer << current->data;
@@ -166,7 +171,7 @@ inline void List<T>::PopFront()
 }
 
 template<typename T>
-inline void List<T>::PushFront(T data) noexcept
+inline void List<T>::PushFront(const T& data) 
 {
 	if (head == nullptr)
 	{
@@ -180,9 +185,9 @@ inline void List<T>::PushFront(T data) noexcept
 }
 
 template<typename T>
-inline List<T>::List(std::initializer_list<T> list)
+inline List<T>::List(std::initializer_list<T> list) : List()
 {
-	for (auto data : list)
+	for (auto& data : list)
 	{
 		this->PushBack(data);
 	}
@@ -198,7 +203,7 @@ inline void List<T>::Clear()
 }
 
 template<typename T>
-inline List<T> List<T>::operator=(const List& other) noexcept
+inline List<T>& List<T>::operator=(const List& other)
 {
 	if (this != &other)
 	{
@@ -213,6 +218,16 @@ inline List<T> List<T>::operator=(const List& other) noexcept
 			current = current->pNext;
 		}
 	}
+	return *this;
+}
+
+
+template<typename T>
+inline List<T>& List<T>::operator=(List&& other)
+{
+	List<T> temp(other);
+	std::swap(this->head, temp.head);
+	std::swap(this->size, temp.size);
 	return *this;
 }
 
@@ -239,29 +254,24 @@ inline void List<T>::PopBack()
 template<typename T>
 inline bool List<T>::operator==(List<T>& list) noexcept
 {
-	if (this->ToString() == list.ToString())
-	{
-		return true;
-	}
+		return this->ToString() == list.ToString();
 }
 
 template<typename T>
 inline bool List<T>::IsEmpty() noexcept
 {
-	if (this->head != nullptr)
-	{
-		return false;
-	}
+	return this->head == nullptr;
 }
 
 template<typename T>
 inline List<T>::List(List&& second) noexcept
 {
 	std::swap(this->head, second.head);
+	std::swap(this->size, second.size);
 }
 
 template<typename T>
-inline List<T>::List(const List<T>& other) :size(0), head(nullptr)
+inline List<T>::List(const List<T>& other) : List()
 {
 	Node<T>* _pNext = nullptr;
 	for (Node<T>* _node = other.head; _node != nullptr; _node = _node->pNext)
