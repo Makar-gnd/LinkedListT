@@ -3,6 +3,7 @@
 #include <exception>
 #include <string>
 #include <sstream>
+#include <memory>
 template<typename T>
 class List
 {
@@ -40,6 +41,11 @@ public:
 	void PushFront(const T& data);
 
 	/**
+	* @brief Функция удаляющая последний элемент списка.
+	*/
+	void PopBack();
+
+	/**
 	@brief Конструктор списка через initializer_list.
 	@param list Список.
 	*/
@@ -64,12 +70,6 @@ public:
 	*/
 	List<T>& operator=(List<T>&& other);
 
-
-	/**
-	@brief Функция удаляющая элемент с конца списка.
-	*/
-	void PopBack();
-
 	/*
 	* @brief Переопределение оператора сравнения.
 	* @param list Список с которым сравниваем.
@@ -92,27 +92,28 @@ public:
 	* @brief Мув
 	*/
 	List<T>(List&& second) noexcept;
+
 private:
 	template<typename T>
 	struct Node
 	{
 		T data;
-		Node* pNext;
+		std::unique_ptr<Node<T>> pNext;
 		/**
 		* @brief Конструктор класса Node.
 		* @param data Данные.
 		* @param pNext Указатель на следующий элемент списка.
 		*/
-		Node(const T data, Node<T>* pNext = nullptr) : data(data), pNext(pNext)
+		Node(const T& data, Node<T>* pNext = nullptr) : data(data), pNext(pNext)
 		{
 		};
 	};
 	size_t size;
-	Node<T>* head;
+	std::unique_ptr<Node<T>> head;
 };
 
 template<typename T>
-inline List<T>::List() : size{0}, head{nullptr}
+inline List<T>::List() : size(0), head(nullptr)
 {
 }
 
@@ -127,16 +128,16 @@ inline void List<T>::PushBack(const T& data)
 {
 	if (head == nullptr)
 	{
-		head = new Node<T>(data);
+		head = std::make_unique<Node<T>>(data);
 	}
 	else
 	{
-		auto current = this->head;
+		auto current = this->head.get();
 		while (current->pNext != nullptr)
 		{
-			current = current->pNext;
+			current = current->pNext.get();
 		}
-		current->pNext = new Node<T>(data);
+		current->pNext = std::make_unique<Node<T>>(data);
 	}
 	size++;
 }
@@ -145,11 +146,11 @@ template<typename T>
 inline std::string List<T>::ToString() const noexcept
 {
 	std::stringstream buffer{};
-	auto current = this->head;
+	auto current = this->head.get();
 	while (current != nullptr)
 	{
 		buffer << current->data;
-		current = current->pNext;
+		current = current->pNext.get();
 	}
 	return buffer.str();
 }
@@ -163,9 +164,7 @@ inline void List<T>::PopFront()
 	}
 	else
 	{
-		auto temp = head;
-		head = head->pNext;
-		delete temp;
+		head = std::move(head->pNext);
 		size--;
 	}
 }
@@ -175,13 +174,35 @@ inline void List<T>::PushFront(const T& data)
 {
 	if (head == nullptr)
 	{
-		head = new Node<T>(data);
+		head = std::make_unique<Node<T>>(data);
 	}
 	else
 	{
-		head = new Node<T>(data, head);
+		std::unique_ptr<Node<T>> newNode = std::make_unique<Node<T>>(data,
+			head.release());
+		head = std::move(newNode);
 	}
 	size++;
+}
+
+template<typename T>
+inline void List<T>::PopBack()
+{
+	if (head == nullptr)
+	{
+		throw std::invalid_argument("Empty list!");
+	}
+	else
+	{
+		Node<T>* LastButOne = this->head.get();
+		while (LastButOne->pNext->pNext != nullptr)
+		{
+			LastButOne = LastButOne->pNext.get();
+		}
+		LastButOne->pNext.reset();
+		LastButOne->pNext = nullptr;
+		size--;
+	}
 }
 
 template<typename T>
@@ -207,15 +228,12 @@ inline List<T>& List<T>::operator=(const List& other)
 {
 	if (this != &other)
 	{
-		if (!this->IsEmpty())
-		{
-			this->Clear();
-		}
-		Node<T>* current = other.head;
+		this->Clear();
+		Node<T>* current = other.head.get();
 		while (current != nullptr)
 		{
 			this->PushBack(current->data);
-			current = current->pNext;
+			current = current->pNext.get();
 		}
 	}
 	return *this;
@@ -231,25 +249,7 @@ inline List<T>& List<T>::operator=(List&& other)
 	return *this;
 }
 
-template<typename T>
-inline void List<T>::PopBack()
-{
-	if (head == nullptr)
-	{
-		throw std::invalid_argument("Список пуст!");
-	}
-	else
-	{
-		Node<T>* LastButOne = this->head;
-		while (LastButOne->pNext->pNext != nullptr)
-		{
-			LastButOne = LastButOne->pNext;
-		}
-		delete LastButOne->pNext;
-		LastButOne->pNext = nullptr;
-		size--;
-	}
-}
+
 
 template<typename T>
 inline bool List<T>::operator==(List<T>& list) noexcept

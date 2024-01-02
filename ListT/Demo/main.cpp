@@ -1,8 +1,11 @@
 ﻿#include"../List/List.h"
 int main()
 {
-	List<std::string> list{"a", "b", "c"};
-	List<std::string> list1{"a", "b", "c"};
-	list1 == list;
+	List<std::string> list{"a","b","c"};
+	//list.PopFront();
+	//list.PushBack("r");
+	//list.PushFront("t");
+	list.PopBack();
+	std::cout << list.ToString();
 	return 0;
 }
